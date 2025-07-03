@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manufacturing Counter System | Cognex</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style1.css" />
+</head>
+<body>
+   <!-- Sidebar Navigation -->
+  <div class="sidebar">
+    <div class="logo-container">
+      <img src="pci.jpg" alt="PCI Logo" width="90" height="30">
+      <img src="cognex1.jpg" alt="Cognex Logo" width="150" height="22">
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item active" data-tab="counter-tab">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Tester Counter</span>
+      </li>
+      <li class="nav-item" data-tab="stations-tab">
+        <i class="fas fa-microchip"></i>
+        <span>Spare Part</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Counter Tab -->
+    <div id="counter-tab" class="tab-content active">
+      <div class="header">
+        <h1 class="page-title">Counter System</h1>
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Other Tester...">
+        </div>
+      </div>
+      
+      <div class="form-container">
+        <div class="select-row">
+          <div class="form-group">
+            <label for="modelSelect">Model</label>
+            <select id="modelSelect">
+              <option value="">Select Model</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="familySelect">Family</label>
+            <select id="familySelect" disabled>
+              <option value="">Select Family</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Display Family & Counter Tab Menu 1 -->
+        <div class="counter-dashboard">
+          <div class="horizontal-counters" id="counterContainer">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Stations Tab 2 -->
+    <div id="stations-tab" class="tab-content">
+      <div class="header">
+        <h1 class="page-title">Spare Part Station</h1>
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="searchTester" placeholder="Other Tester...">
+        </div>
+      </div>
+
+      <div class="stations-dashboard">
+        <div class="stations-summary">
+          <div class="summary-controls">
+            <div class="select-container">
+              <label>Select Tester Model</label>
+              <select id="modelSelectSummary">
+                <option value="">Select Model</option>
+              </select>
+            </div>
+            
+            <div class="summary-counter">
+              <span>Total Count</span>
+              <div class="counter-value" id="mainCounter">0</div>
+            </div>
+          </div>
+          
+          <button class="btn-reset-main" onclick="resetMainCounter()">
+            <i class=""></i> Reset
+          </button>
+        </div>
+
+        <div class="stations-section">
+          <h2 class="section-title">
+            <i class="fas fa-microchip"></i> Test Stations
+          </h2>
+          
+          <!-- Add Port -->
+          <div class="part-management">
+            <div class="add-part-controls">
+              <input type="text" id="newPartName" placeholder="Enter new part name">
+              <button class="btn-add-part" id="addNewPartBtn">
+                <i class="fas fa-plus-circle"></i> Add Part
+              </button>
+            </div>
+          </div>
+          
+          <div class="stations-grid" id="stationsContainer">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <i class="fas fa-factory"></i>
+      <span>© 2025 | Monitoring System by Test Engineering</span>
+    </div>
+    <div class="status-item">
+      <i class="fas fa-calendar-alt"></i>
+      <span id="current-date">May 7, 2025</span>
+    </div>
+    <div class="status-item">
+      <i class="fas fa-clock"></i>
+      <span id="current-time">14:30:45</span>
+    </div>
+  </div>
+
+  <!-- Counter Tab Menu 1 -->
+  <div class="counter-template" style="display: none;">
+    <div class="counter-card">
+      <div class="counter-header">
+        <span class="family-label"></span>
+        <span class="family-value">-</span>
+      </div>
+      <div class="counter-display">0</div>
+      <button class="btn-reset">RESET</button>
+    </div>
+  </div>
+
+  <script>
+    // All Tester Cognex
+    const modelToFamily = {
+      "Lion": ["Lion Test"],
+      "Hornbill Final": ["Hornbill Final #2", "Hornbill Final #4", "Hornbill Final #9"],
+      "Hornbill IO": ["Hornbill IO #2"],
+      "Hornbill280IO": ["Hornbill 280IO #2", "Hornbill 280IO #3", "Hornbill 280IO #6"],
+      "AT70 Advance": ["AT70 Advance Focus #2", "AT70 Functional #1", "AT70 Color Pixel Correction #1"],
+      "AT70 Finch": ["AT70 Finch Focus #4", "Finch Kestrel Final #2", "Finch Kestrel #4"],
+      "AT70 Focus": ["AT70 Focus # 1", "AT70 Focus #6", "AT70 Focus #12", "AT70 Focus #13", "AT70 #12", "AT70 #13"],
+      "DM50": ["DM50 Final"],
+      "DM300": ["DM300 Illumination #3", "DM300 Focus 1", "DM300 Focus 2", "DM300 Focus 3"],
+      "DM374": ["DM374 Final #1", "DM374 Aligner #1", "DM374 Only Aligner #5"],
+      "DM470": ["DM470 Final #1"],
+      "DM8070": ["DM8070 Verifier Focus #2", "DM8070 Laser Aligner #2", "Goldfinch Final #2"],
+      "IDExx": ["IDExx Test", "IDExx Focus 3"],
+      "KITE": ["Kite Final #1", "Kite Final #2", "Kite Final #6", "Kite Final #7", "Kite Base Station Final #2"],
+      "Merlin": ["Merlin Base A_1"],
+      "OEM Focus": ["OEM FOCUS#2"],
+      "Parakeet": ["Parakeet Final #2", "Parakeet Final #4", "Parakeet Final #5"],
+      "Torch": ["Torch Final #1", "Torch Final #2"],
+      "Viper": ["Viper Final#1", "Viper Warmup #2",  "Viper Focus 1", "Viper Calibration", "Viper Imager Quality#1", "Viper Mask Aligner#2"],
+      "Wren II Focus": ["Wren II Focus Test B08975", "Wren II Focus Test B17475", "Wren II Focus Test B13070"],
+      "Wren II Functional": ["Wren II Functional #3", "Wren II Functional #5", "Wren II Functional #6", "Wren II Functional #9", "Wren II Functional #10"],
+      "Wren II L.L Calibration": ["Wren II L.L Calibration #1", "Wren II L.L Calibration #2", "Wren II L.L Calibration #4", "Wren II L.L Calibration #6", "Wren II L.L Calibration #7"],
+      "Wren II Programming": ["Wren II Programming #3", "Wren II Programming #4", "Wren II Programming #8", "Warmup"],
+      "Zebra Aligner": ["Zebra Aligner #1", "Zebra Aligner #2", "Zebra Aligner #3"],
+      "Zebra Linescan": ["Zebra Linescan Encoder Final #1"],
+      "Zebra AutoFocus": ["Zebra Auto Focus #2", "Zebra Illuminator"],
+      "Zebra Preheat Oven": ["Zebra Preheat Oven"]
+    };
+    
+    // Configuration Add Model Baru 
+    const modelPartTypes = {
+      "Production": ["Interconnect Board", "Ethernet Cable", "USB Cable", "Button Rubber"],
+      "Hornbill Final": ["Interconnect Board", "Ethernet Cable", "USB Cable", "Button Rubber"],
+      "Hornbill IO": ["Interconnect Board", "Ethernet Cable", "USB Cable", "Button Rubber"],
+      "AT70 Advance": ["Interconnect Board", "Ethernet Cable", "USB Cable", "Button Rubber"],
+      "Default": ["Interconnect Board", "Ethernet Cable", "USB Cable", "Button Rubber"]
+    };
+    
+    const slots = [0, 1, 2, 3];
+    
+    // Initialize Aplication
+    document.addEventListener("DOMContentLoaded", () => {
+      // Initialize Tab Counter
+      const modelSelect = document.getElementById("modelSelect");
+      Object.keys(modelToFamily).forEach(model => {
+        const option = document.createElement("option");
+        option.value = model;
+        option.text = model;
+        modelSelect.appendChild(option);
+      });
+      
+      modelSelect.addEventListener("change", updateFamily);
+      document.getElementById("familySelect").addEventListener("change", runCounter);
+      document.getElementById("searchInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchModel();
+      });
+
+      document.getElementById("searchTester").addEventListener("keydown", (e) =>{
+        if (e.key === "Enter") searchTesterModel();
+      })
+
+      // Initialize Test Stations Tab
+      initializeStations();
+      initModelDropdown();
+      
+      //Initialize parts when model is selected
+     document.getElementById("modelSelectSummary").addEventListener("change", function() {
+      initializeParts();
+      updateMainCounter(this.value);
+      });
+      
+      // Add new part button
+      document.getElementById("addNewPartBtn").addEventListener("click", () => {
+        const partName = document.getElementById("newPartName").value.trim();
+        if (partName) {
+          addPartToAllStations(partName);
+          document.getElementById("newPartName").value = '';
+        }
+      });
+      
+      //Add with Enter key
+      document.getElementById("newPartName").addEventListener("keypress", (e) => {
+        if (e.key === 'Enter') {
+          const partName = document.getElementById("newPartName").value.trim();
+          if (partName) {
+            addPartToAllStations(partName);
+            document.getElementById("newPartName").value = '';
+          }
+        }
+      });
+      
+      // Tab Navigation
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const tabId = this.getAttribute('data-tab');
+          
+          // Update active tab
+          navItems.forEach(nav => nav.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Show corresponding tab content
+          document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+          });
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+      
+      // Update date and time
+      updateDateTime();
+      setInterval(updateDateTime, 1000);
+    });
+    
+    // Counter Tab Functions
+    function updateFamily() {
+      const model = document.getElementById("modelSelect").value;
+      const familySelect = document.getElementById("familySelect");
+      familySelect.innerHTML = "<option value=''>Select Family</option>";
+      familySelect.disabled = false;
+
+      const families = modelToFamily[model];
+      families?.forEach((family, index) => {
+        const option = document.createElement("option");
+        option.value = family;
+        option.text = family;
+        familySelect.appendChild(option);
+  });
+
+  runCounter();
+}
+
+  //Run Counter
+    function runCounter() {
+      const model = document.getElementById("modelSelect").value;
+      const container = document.getElementById("counterContainer");
+      container.innerHTML = '';
+      
+      if (modelToFamily[model]) {
+        const families = modelToFamily[model];
+        
+        families.forEach((family, index) => {
+          const template = document.querySelector('.counter-template').cloneNode(true);
+          const counterCard = template.querySelector('.counter-card');
+          const count = Math.floor(Math.random() * 100);
+          
+          counterCard.querySelector('.family-value').textContent = family;
+          counterCard.querySelector('.counter-display').textContent = count;
+          counterCard.querySelector('.counter-display').id = `counterValue${index+1}`;
+          counterCard.querySelector('.btn-reset').addEventListener('click', () => {
+            counterCard.querySelector('.counter-display').textContent = "0";
+          });
+          
+          template.style.display = 'block';
+          container.appendChild(template);
+        });
+      }
+    }
+
+    // New function to reset selected counter
+    function resetSelectedCounter() {
+      const selectedModel = document.getElementById("modelSelect").value;
+      const selectedFamily = document.getElementById("familySelect").value;
+      
+      if (!selectedModel || !selectedFamily) {
+        alert("Please select both Model and Family first");
+        return;
+      }
+      
+      // Find the counter card that matches the selected family
+      const counterCards = document.querySelectorAll('.counter-card');
+      counterCards.forEach(card => {
+        const familyValue = card.querySelector('.family-value').textContent;
+        if (familyValue === selectedFamily) {
+          card.querySelector('.counter-display').textContent = "0";
+        }
+      });
+    }
+
+    function searchModel() {
+      const input = document.getElementById("searchInput").value.trim();
+      if (modelToFamily[input]) { 
+        document.getElementById("modelSelect").value = input;
+        initializeParts();
+        updateFamily();
+      } else {
+        document.getElementById("familyValue").textContent = "-";
+        document.getElementById("counterValue").textContent = "0";
+      }
+    }
+    
+
+    function searchTesterModel(){
+      const input = document.getElementById("searchTester").value.trim();
+      if(modelToFamily[input]){
+        document.getElementById("modelSelectSummary").value = input;
+      initializeParts();
+      updateMainCounter();     
+     } else {
+      alert("Tester model not found!")
+     }
+    }
+
+    // Reset Button Tab Menu 1
+    function resetCounter(e) {
+      const btnId = e.target.id;
+      const counterId = btnId.replace('resetBtn', 'counterValue');
+      const counterElement = document.getElementById(counterId);
+      
+      if (counterElement) {
+        counterElement.textContent = "0";
+      }
+    }
+
+    // Tab Menu 2
+    function resetPartCounter(counterId) {
+      if (counterId.startsWith('slot') && counterId.endsWith('Counter')) {
+        document.getElementById(counterId).textContent = "0";
+        const slotNumber = counterId.match(/slot(\d+)Counter/)[1];
+        const partCounters = document.querySelectorAll(`#slot${slotNumber}Parts .part-count`);
+        
+        partCounters.forEach(counter => {
+          counter.textContent = "0";
+        });
+      } else {
+        document.getElementById(counterId).textContent = "0";
+      }
+    }
+
+    function resetAllCountersInSlot(slot) {
+      document.getElementById(`slot${slot}Counter`).textContent = "0";
+      const partCounters = document.querySelectorAll(`#slot${slot}Parts .part-count`);
+      partCounters.forEach(counter => {
+        counter.textContent = "0";
+      });
+    }
+
+    function resetMainCounter() {
+      document.getElementById('mainCounter').textContent = '0';
+      slots.forEach(slot => {
+        resetAllCountersInSlot(slot);
+      });
+    }
+
+    // Test Stations Tab Functions Menu 2
+    function initializeStations() {
+      const stationsContainer = document.getElementById('stationsContainer');
+      
+      slots.forEach(slot => {
+        const stationCard = document.createElement('div');
+        stationCard.className = 'station-card';
+        stationCard.id = `slot${slot}`;
+        stationCard.innerHTML = `
+          <div class="station-header">
+            <div class="station-name">Slot #${slot}</div>
+          </div>
+          <div class="station-counter" id="slot${slot}Counter">0</div> 
+          <div class="station-reset-container">
+            <button class="btn btn-danger" onclick="resetAllCountersInSlot(${slot})">
+              <i class=""></i> Reset
+            </button>
+          </div>
+          <div class="parts-list">
+            <div class="parts-title">Tested Parts</div>
+            <div class="parts" id="slot${slot}Parts"></div>
+          </div>
+        `;
+        stationsContainer.appendChild(stationCard);
+      });
+    }
+
+    // Inisialisasi dropdown model tab menu 2
+    function initModelDropdown() {
+      const modelSelect = document.getElementById('modelSelectSummary');
+      modelSelect.innerHTML= "<option value=''>Select Model</option>";
+      
+      Object.keys(modelToFamily).forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        option.text = model;
+        modelSelect.appendChild(option);
+      });
+    }
+
+    // Update counter berdasarkan model terpilih
+    function updateMainCounter(selectedModel) {
+      const mainCounter = document.getElementById('mainCounter');
+      const randomcount = Math.floor(Math.random () * 100) + 1;
+      mainCounter.textContent = randomcount;
+    }
+
+    function initializeParts() {
+      const selectedModel = document.getElementById('modelSelectSummary').value;
+      const partsToUse = modelPartTypes[selectedModel] || modelPartTypes['Default'];
+      
+      let totalDummy = 0;
+
+      slots.forEach(slot => {
+        const partContainer = document.querySelector(`#slot${slot}Parts`);
+        const counterElement = document.querySelector(`#slot${slot}Counter`);
+        partContainer.innerHTML = '';
+
+      let slotTotal = 0;
+        
+        partsToUse.forEach(type => {
+          const randomValue = Math.floor(Math.random() *10) +1;
+          totalDummy += randomValue;
+          slotTotal += randomValue;
+          addPartUI(partContainer, slot, type, randomValue);
+        });
+        if (counterElement){
+          counterElement.textContent =slotTotal;
+        }
+      });
+      document.getElementById('mainCounter').textContent = totalDummy
+    }
+    
+    function addPartUI(container, slot, type, value) {
+      const partId = `slot${slot}-${type.replace(/\s/g, '')}`;
+      if (document.getElementById(partId)) return;
+      
+      const partDiv = document.createElement('div');
+      partDiv.className = 'part-item';
+      partDiv.innerHTML = `
+        <div class="part-name">${type}</div>
+        <div class="part-controls">
+          <div class="part-count" id="${partId}" onclick="incrementCounter('${partId}')">${Math.floor(Math.random() * 10)}</div>
+          <button class="btn btn-danger btn-sm" onclick="resetPartCounter('${partId}')">
+            <i class=""></i> Reset
+          </button>
+          <button class="btn-remove-part" onclick="removePart(this, '${type}')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(partDiv);
+    }
+    
+    function addPartToAllStations(partName) {
+      const selectedModel = document.getElementById('modelSelectSummary').value;
+      
+      // Add to modelPartTypes if not already there
+      if (selectedModel && !modelPartTypes[selectedModel]?.includes(partName)) {
+        if (!modelPartTypes[selectedModel]) {
+          modelPartTypes[selectedModel] = [];
+        }
+        modelPartTypes[selectedModel].push(partName);
+      }
+      
+      // Add to all slots
+      slots.forEach(slot => {
+        const container = document.querySelector(`#slot${slot}Parts`);
+        addPartUI(container, slot, partName);
+      });
+    }
+    
+    function removePart(button, partName) {
+      if (confirm(`Remove ${partName} from this station?`)) {
+        const partItem = button.closest('.part-item');
+        partItem.remove();
+        
+        // Update modelPartTypes if needed
+        const selectedModel = document.getElementById('modelSelectSummary').value;
+        if (selectedModel && modelPartTypes[selectedModel]) {
+          // Check if part still exists in other stations
+          let partStillExists = false;
+          slots.forEach(slot => {
+            if (document.getElementById(`slot${slot}-${partName.replace(/\s/g, '')}`)) {
+              partStillExists = true;
+            }
+          });
+          
+          // If not in any station, remove from modelPartTypes
+          if (!partStillExists) {
+            modelPartTypes[selectedModel] = modelPartTypes[selectedModel].filter(p => p !== partName);
+          }
+        }
+      }
+    }
+    
+    function incrementCounter(counterId) {
+      const counter = document.getElementById(counterId);
+      let value = parseInt(counter.textContent) || 0;
+      counter.textContent = value + 1;
+      
+      // If this is a station counter, also increment the main counter
+      if (counterId.startsWith('slot') && counterId.endsWith('Counter')) {
+        incrementCounter('mainCounter');
+      }
+    }
+
+    // Update date and time
+    function updateDateTime() {
+      const now = new Date();
+      document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US', {
+        hour12: false
+      });
+    }
+  </script>
+</body>
+</html>
